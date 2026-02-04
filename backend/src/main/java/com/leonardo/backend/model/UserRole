@@ -1,0 +1,6 @@
+package com.leonardo.backend.model;
+
+public enum UserRole {
+    ARTIST,
+    ADMIN
+}

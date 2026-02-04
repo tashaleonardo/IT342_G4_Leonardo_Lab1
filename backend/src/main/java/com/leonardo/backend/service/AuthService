@@ -1,0 +1,109 @@
+package com.leonardo.backend.service;
+
+import com.leonardo.backend.dto.AuthResponse;
+import com.leonardo.backend.dto.LoginRequest;
+import com.leonardo.backend.dto.RegisterRequest;
+import com.leonardo.backend.model.Artist;
+import com.leonardo.backend.model.User;
+import com.leonardo.backend.model.UserRole;
+import com.leonardo.backend.repository.ArtistRepository;
+import com.leonardo.backend.repository.UserRepository;
+import com.leonardo.backend.config.JwtTokenProvider;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Duration;
+
+@Service
+@RequiredArgsConstructor
+public class AuthService {
+
+    private final UserRepository userRepository;
+    private final ArtistRepository artistRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtTokenProvider jwtTokenProvider;
+
+    @Transactional
+    public AuthResponse register(RegisterRequest request) {
+        // FR-1.1: Check if email already exists [file:46]
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new IllegalArgumentException("Email already registered");
+        }
+
+        // FR-1.1: Hash password with BCrypt [file:46]
+        String hashedPassword = passwordEncoder.encode(request.getPassword());
+
+        // FR-1.1: Create user with role ARTIST [file:46]
+        User user = User.builder()
+                .email(request.getEmail())
+                .passwordHash(hashedPassword)
+                .fullName(request.getFullName())
+                .phoneNumber(request.getPhoneNumber())
+                .role(UserRole.ARTIST)
+                .isActive(true)
+                .build();
+
+        User savedUser = userRepository.save(user);
+
+        // FR-1.1: Create corresponding artist profile [file:46]
+        Artist artist = Artist.builder()
+                .user(savedUser)
+                .bio("")
+                .yearsOfExperience(0)
+                .specialties("")
+                .profileImageUrl(null)
+                .build();
+
+        artistRepository.save(artist);
+
+        // FR-1.1: Generate JWT token [file:46]
+        String token = jwtTokenProvider.createToken(
+                savedUser.getEmail(),
+                savedUser.getRole()
+        );
+        long expiresIn = Duration.ofHours(24).toMillis();
+
+        return AuthResponse.builder()
+                .token(token)
+                .email(savedUser.getEmail())
+                .role(savedUser.getRole().name())
+                .userId(savedUser.getUserId())
+                .expiresIn(expiresIn)
+                .build();
+    }
+
+    public AuthResponse login(LoginRequest request) {
+        // FR-1.2: Find user by email [file:46]
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new IllegalArgumentException("Invalid credentials"));
+
+        // FR-1.2: Verify password [file:46]
+        if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+            throw new IllegalArgumentException("Invalid credentials");
+        }
+
+        // FR-1.2: Generate JWT token [file:46]
+        String token = jwtTokenProvider.createToken(user.getEmail(), user.getRole());
+        long expiresIn = Duration.ofHours(24).toMillis();
+
+        return AuthResponse.builder()
+                .token(token)
+                .email(user.getEmail())
+                .role(user.getRole().name())
+                .userId(user.getUserId())
+                .expiresIn(expiresIn)
+                .build();
+    }
+
+    public User getProfile(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+    }
+
+    public Artist getArtistProfile(String email) {
+        return artistRepository.findByUser_Email(email)
+                .orElseThrow(() -> new IllegalArgumentException("Artist profile not found"));
+    }
+}
