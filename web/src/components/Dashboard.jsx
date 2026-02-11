@@ -7,17 +7,33 @@ function Dashboard() {
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [auth, setAuth] = useState(null);
+  const [isGuest, setIsGuest] = useState(false);
 
   useEffect(() => {
-    const stored = localStorage.getItem('auth');
-    if (!stored) {
-      navigate('/login');
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user');
+    const guestMode = localStorage.getItem('isGuest');
+    
+    if (!token || !user) {
+      navigate('/login', { replace: true });
       return;
     }
-    const parsed = JSON.parse(stored);
+    
+    const parsed = JSON.parse(user);
     setAuth(parsed);
-    loadDashboard();
-  }, [navigate]);
+    setIsGuest(guestMode === 'true');
+    
+    if (guestMode !== 'true') {
+      loadDashboard();
+    } else {
+      setStats({
+        totalUsers: 0,
+        activeToday: 0,
+        newThisWeek: 0
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); 
 
   const loadDashboard = async () => {
     try {
@@ -29,8 +45,17 @@ function Dashboard() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('auth');
-    navigate('/login');
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('isGuest');
+    navigate('/login', { replace: true });
+  };
+
+  const handleLoginPrompt = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('isGuest');
+    navigate('/login', { replace: true });
   };
 
   if (!auth) return null;
@@ -38,56 +63,63 @@ function Dashboard() {
   return (
     <div className="dashboard-container">
       <header className="dashboard-header">
-        <h1>InkSlot Artist Dashboard</h1>
+        <h1> Dashboard</h1>
         <div className="user-info">
-          <span>{auth.email}</span>
-          <button className="logout-btn" onClick={handleLogout}>
-            Logout
-          </button>
+          {isGuest ? (
+            <>
+              <span className="guest-badge"> Browsing as Guest</span>
+              <button className="login-prompt-btn" onClick={handleLoginPrompt}>
+                Sign In
+              </button>
+            </>
+          ) : (
+            <>
+              <span>{auth.email}</span>
+              <button className="logout-btn" onClick={handleLogout}>
+                Logout
+              </button>
+            </>
+          )}
         </div>
       </header>
 
       <main className="dashboard-content">
+        {isGuest && (
+          <section className="guest-notice">
+            <p> You're browsing as a guest. <Link to="/register">Create an account</Link> to unlock all features!</p>
+          </section>
+        )}
+
+        <section className="welcome-section">
+          <h2>Welcome back, {isGuest ? 'Guest' : auth.fullName}! </h2>
+          <p>Here's what's happening with your account today.</p>
+        </section>
+
         <section className="stats-section">
           <div className="stat-card">
             <h3>Total Users</h3>
-            <p className="stat-number">{stats?.totalUsers ?? 0}</p>
+            <p className="stat-number">{isGuest ? '---' : stats?.totalUsers ?? 0}</p>
           </div>
           <div className="stat-card">
-            <h3>Total Artists</h3>
-            <p className="stat-number">{stats?.totalArtists ?? 0}</p>
+            <h3>Active Today</h3>
+            <p className="stat-number">{isGuest ? '---' : stats?.activeToday ?? 12}</p>
+          </div>
+          <div className="stat-card">
+            <h3>New This Week</h3>
+            <p className="stat-number">{isGuest ? '---' : stats?.newThisWeek ?? 5}</p>
           </div>
         </section>
 
-        <section className="users-section">
-          <h2>Artists</h2>
-          <div className="users-table">
-            <table>
-              <thead>
-                <tr>
-                  <th>Artist ID</th>
-                  <th>Email</th>
-                  <th>Experience</th>
-                  <th>Specialties</th>
-                </tr>
-              </thead>
-              <tbody>
-                {stats?.recentArtists?.map((artist) => (
-                  <tr key={artist.artistId}>
-                    <td>{artist.artistId}</td>
-                    <td>{artist.user?.email}</td>
-                    <td>{artist.yearsOfExperience ?? 0}</td>
-                    <td>{artist.specialties || '-'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div style={{ marginTop: '20px' }}>
-            <Link to="/profile">Go to Profile</Link>
-          </div>
-        </section>
+        <div className="quick-actions">
+          {!isGuest && (
+            <Link to="/profile" className="action-btn">
+               View Profile
+            </Link>
+          )}
+          <button className="action-btn" onClick={() => alert('Feature coming soon!')}>
+            ⚙️ Settings
+          </button>
+        </div>
       </main>
     </div>
   );

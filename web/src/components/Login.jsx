@@ -20,8 +20,9 @@ function Login() {
 
     try {
       const res = await authAPI.login(form);
-      localStorage.setItem('auth', JSON.stringify(res.data));
-      navigate('/dashboard');
+      localStorage.setItem('token', res.data.token);
+      localStorage.setItem('user', JSON.stringify(res.data));
+      navigate('/dashboard', { replace: true });
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed');
     } finally {
@@ -29,10 +30,26 @@ function Login() {
     }
   };
 
+  const handleGuestBrowse = () => {
+    const guestUser = {
+      email: 'guest@example.com',
+      fullName: 'Guest User',
+      role: 'GUEST',
+      userId: 0
+    };
+    
+    localStorage.setItem('isGuest', 'true');
+    localStorage.setItem('user', JSON.stringify(guestUser));
+    localStorage.setItem('token', 'guest-token'); 
+    
+    navigate('/dashboard', { replace: true });
+  };
+  
+
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h2>InkSlot Artist Login</h2>
+        <h2> Welcome Back!</h2>
         {error && <div className="error-message">{error}</div>}
 
         <form onSubmit={handleSubmit}>
@@ -63,8 +80,12 @@ function Login() {
           </button>
         </form>
 
+        <button className="guest-btn" onClick={handleGuestBrowse}>
+           Continue as Guest
+        </button>
+
         <p className="auth-link">
-          Don’t have an account? <Link to="/register">Register here</Link>
+          Don't have an account? <Link to="/register">Register here</Link>
         </p>
       </div>
     </div>
