@@ -25,7 +25,8 @@ function Register() {
 
     try {
       const res = await authAPI.register(form);
-      localStorage.setItem('auth', JSON.stringify(res.data));
+      localStorage.setItem('token', res.data.token);
+      localStorage.setItem('user', JSON.stringify(res.data));
       navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.error || 'Registration failed');
@@ -37,7 +38,7 @@ function Register() {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h2>InkSlot Artist Registration</h2>
+        <h2>Registration</h2>
         {error && <div className="error-message">{error}</div>}
 
         <form onSubmit={handleSubmit}>

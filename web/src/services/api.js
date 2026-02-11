@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8080/api';
+const API_BASE_URL = '/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -9,18 +9,21 @@ const api = axios.create({
   },
 });
 
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 // NAMED export: authAPI
 export const authAPI = {
   test: () => api.get('/auth/test'),
   register: (data) => api.post('/auth/register', data),
   login: (data) => api.post('/auth/login', data),
   dashboard: () => api.get('/auth/dashboard'),
-  profile: (token) =>
-    api.get('/auth/profile', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }),
+  profile: () => api.get('/auth/profile'),
 };
 
 // Optional default export of the axios instance

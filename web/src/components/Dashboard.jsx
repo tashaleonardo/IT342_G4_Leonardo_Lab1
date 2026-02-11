@@ -38,7 +38,7 @@ function Dashboard() {
   return (
     <div className="dashboard-container">
       <header className="dashboard-header">
-        <h1>InkSlot Artist Dashboard</h1>
+        <h1>Dashboard</h1>
         <div className="user-info">
           <span>{auth.email}</span>
           <button className="logout-btn" onClick={handleLogout}>

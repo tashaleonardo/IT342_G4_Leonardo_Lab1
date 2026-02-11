@@ -20,7 +20,8 @@ function Login() {
 
     try {
       const res = await authAPI.login(form);
-      localStorage.setItem('auth', JSON.stringify(res.data));
+      localStorage.setItem('token', res.data.token);
+      localStorage.setItem('user', JSON.stringify(res.data));
       navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed');
@@ -32,7 +33,7 @@ function Login() {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h2>InkSlot Artist Login</h2>
+        <h2>Login</h2>
         {error && <div className="error-message">{error}</div>}
 
         <form onSubmit={handleSubmit}>
